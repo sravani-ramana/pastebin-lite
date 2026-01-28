@@ -1,33 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getPaste, calculateExpiresAt, calculateRemainingViews } from '@/lib/db';
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
-  
-  // Check for test mode time header
-  let testNowMs: number | undefined;
-  if (process.env.TEST_MODE === '1') {
-    const testNowHeader = request.headers.get('x-test-now-ms');
-    if (testNowHeader) {
-      testNowMs = parseInt(testNowHeader, 10);
-    }
-  }
+  const { id } = await context.params;
 
-  const paste = await getPaste(id, true, testNowMs);
+  const paste = await db.paste.findUnique({
+    where: { id },
+  });
 
   if (!paste) {
     return NextResponse.json(
-      { error: 'Paste not found or expired' },
+      { error: "Paste not found" },
       { status: 404 }
     );
   }
 
   return NextResponse.json({
     content: paste.content,
-    remaining_views: calculateRemainingViews(paste),
-    expires_at: calculateExpiresAt(paste)
-  }, { status: 200 });
+    remaining_views: paste.remaining_views,
+    expires_at: paste.expires_at,
+  });
 }
