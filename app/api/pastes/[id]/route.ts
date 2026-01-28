@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { getPaste } from "@/lib/db";
 
 export async function GET(
   request: NextRequest,
@@ -7,9 +7,7 @@ export async function GET(
 ) {
   const { id } = await context.params;
 
-  const paste = await db.paste.findUnique({
-    where: { id },
-  });
+  const paste = await getPaste(id);
 
   if (!paste) {
     return NextResponse.json(
